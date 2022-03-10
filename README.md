@@ -15,3 +15,8 @@ Epigenetic modifications alter DNA expression without changing the DNA sequence.
 
 ## Expected Outcomes
 A research report easily modified to an article for a scientific journal.
+
+## External Links
+* Centre for Epidemiology and Biostatistics of UoM: https://mspgh.unimelb.edu.au/centres-institutes/centre-for-epidemiology-and-biostatistics
+* Twins Research Australia of UoM: https://mspgh.unimelb.edu.au/research-groups/centre-for-epidemiology-and-biostatistics-research/australian-twin-registry
+* Twins Research Australia official website: https://www.twins.org.au/
