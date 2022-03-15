@@ -9,7 +9,7 @@ Team Members:
 * Ni Zhang - 1081143 - nzzh1@student.unimelb.edu.au
 * Tianyu Zhou - 1199306 - zhoutz2@student.unimelb.edu.au
 
-Academic supervisor: Dr Jiadong Mao <jiadong.mao@unimelb.edu.au>
+Academic supervisor: Dr Jiadong Mao - jiadong.mao@unimelb.edu.au
 
 Subject coordinator: Michael Kirley
 
