@@ -1,7 +1,7 @@
 # MAST90106-90107-Group-Project
 MAST90106/90107 Data Science Project of the University of Melbourne
 
-Group 31: Haoze Xia, Atefeh Zamani, Ni Zhang, Tianyu Zhou
+Group 31: Zexi Liu, Haoze Xia, Atefeh Zamani, Ni Zhang, Tianyu Zhou
 
 Academic supervisor: Dr Jiadong Mao <jiadong.mao@unimelb.edu.au>
 
