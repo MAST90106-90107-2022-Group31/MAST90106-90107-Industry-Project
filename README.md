@@ -9,9 +9,9 @@ Team Members:
 * Ni Zhang - 1081143 - nzzh1@student.unimelb.edu.au
 * Tianyu Zhou - 1199306 - zhoutz2@student.unimelb.edu.au
 
-Academic supervisor: Dr Jiadong Mao - jiadong.mao@unimelb.edu.au
+Academic Supervisor: Dr Jiadong Mao - jiadong.mao@unimelb.edu.au
 
-Subject coordinator: Michael Kirley
+Subject Coordinator: Michael Kirley
 
 ## Project Title
 **Epigenetic Classifier for Twin Zygosity**
@@ -21,6 +21,15 @@ Epigenetic modifications alter DNA expression without changing the DNA sequence.
 
 ## Expected Outcomes
 A research report easily modified to an article for a scientific journal.
+
+## Host Information
+Host Organisation Name: Twins Research Centre of Epidemiology and Biostatistics UoM
+
+Industry Contact:
+* Dr Sue Malta (Senior Manager and Researcher) - susan.malta@unimelb.edu.au
+* Dr Shuai Li - shuai.li@unimelb.edu.au
+
+Industry Address: Level 3, 207 Bouverie Street, Carlton South, VIC 3054, Australia
 
 ## External Links
 * Centre for Epidemiology and Biostatistics of UoM: https://mspgh.unimelb.edu.au/centres-institutes/centre-for-epidemiology-and-biostatistics
