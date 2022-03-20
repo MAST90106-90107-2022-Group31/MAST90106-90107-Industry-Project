@@ -11,7 +11,7 @@ Team Members:
 
 Academic Supervisor: Dr Jiadong Mao - jiadong.mao@unimelb.edu.au
 
-Subject Coordinator: Michael Kirley
+Subject Coordinator: Professor Michael Kirley - mkirley@unimelb.edu.au
 
 ## Project Title
 **Epigenetic Classifier for Twin Zygosity**
