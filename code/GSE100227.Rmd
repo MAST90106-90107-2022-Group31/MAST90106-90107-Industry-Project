@@ -1,0 +1,400 @@
+---
+title: "DS-Project1-GSE100227"
+author: "Haoze Xia"
+date: "12/05/2022"
+output: html_document
+---
+# GSE100227
+
+## Method 1
+### Remove all the sister
+#### s13
+```{r}
+# Get the response data of GSE100227
+gse <- getGEO("GSE100227", GSEMatrix = TRUE)
+# gse1 <- getGEO("GSE73115", GSEMatrix = TRUE)
+```
+
+```{r}
+# Save response values and sampleID to csv
+zygostiy = gse$GSE100227_series_matrix.txt.gz@phenoData@data$`zygosity:ch1`
+sampleID = gse$GSE100227_series_matrix.txt.gz@phenoData@data$geo_accession
+df1 = data.frame(sampleID,zygostiy)
+write.table(df1, file = "data/GSE100227_response.csv",row.names=FALSE,col.names=TRUE,sep=",")
+```
+
+
+```{r}
+# load all the files
+s13 = read.csv('data/GSE100227_normalized_data_Supple13.csv')
+s13_p = read_excel('data/41467_2021_25583_MOESM9_ESM.xlsx', sheet = 2)
+response = read.csv("data/GSE100227_response.csv")
+zygosity.true = response$zygostiy
+```
+
+
+
+```{r}
+# add intercept to s13
+intercept = c(rep(1,length(zygosity.true)))
+new_s13 = cbind(intercept,s13)
+```
+
+```{r}
+# dot product
+res1_1 = as.matrix(new_s13) %*% as.matrix(s13_p[,2]) 
+res1_1 <- 1/(1+exp(-res1_1))
+zygosity.predicted = apply(res1_1, 2, function(x) ifelse(x >= 0.635261309248644, "MZ", "DZ"))
+```
+
+```{r}
+# remove all sister
+predicted_vs_true = data.frame(zygosity.predicted, zygosity.true, res1_1)
+predicted_vs_true2 = predicted_vs_true[complete.cases(predicted_vs_true),] # remove NAs
+predicted_vs_true2 = subset(predicted_vs_true, zygosity.true != 'Sister') # remove all Sister samples
+confusion.matrix = xtabs(~ Estimate + zygosity.true, predicted_vs_true2)
+accuracy = (confusion.matrix[1,1]+confusion.matrix[2,2])/(confusion.matrix[1,1]+confusion.matrix[1,2]+
+      confusion.matrix[2,1]+confusion.matrix[2,2])
+confusion.matrix
+```
+
+```{r}
+# ROC curve
+pred <- prediction(predicted_vs_true2[,3], predicted_vs_true2[,2])
+perf <- performance(pred,"tpr","fpr")
+perf
+plot(perf,colorize=TRUE)
+```
+
+```{r}
+# Let 'MZ' be 1 and "DZ" be 0 for further analysis
+predicted_vs_true3 = apply(predicted_vs_true2[,1:2],2, function(x) ifelse(x == 'MZ', 1, 0))
+predicted_vs_true3 = cbind(predicted_vs_true3, prob = predicted_vs_true2[,3])
+```
+
+```{r}
+# Model performance
+library(caret)
+library(pROC)
+library(ROCR)
+roc.p = roc(predicted_vs_true3[,2], predicted_vs_true3[,3])
+cutoff = roc.p$thresholds[which.max(roc.p$sensitivities+roc.p$specificities)]
+pred_b = as.integer(predicted_vs_true3[,3]>cutoff)
+cft = table(pred_b, predicted_vs_true3[,2])
+cm = confusionMatrix(cft, positive = '1', mode = 'everything')
+paste0('cutoff: ', cutoff)
+print(roc.p$auc)
+print(cm)
+```
+
+```{r}
+#pca visualisation
+aa = cbind(s13,predicted_vs_true)
+aa = subset(aa,zygosity.true != 'Sister')
+bb = aa[,1:249]
+cc = aa[,252:252]
+final <- bb
+final$trueclass <- predicted_vs_true3[,2]
+final$pred <- as.vector(cc)
+
+foo <- prcomp(bb, center=T, scale. = T)
+bar <- foo$x[,1:2]
+plot(bar,col=trueclass+1)
+```
+
+
+```{r}
+library(pls)
+pls.res <- plsr(trueclass~., ncomp=2, data=final)
+plot(pls.res$scores, col=trueclass+1)
+```
+
+```{r}
+ntrain <- round(N*0.75)
+ntest <- N - ntrain
+# set.seed(123)
+id.train <- sample(1:N,ntrain)
+id.test <- setdiff(1:N,id.train)
+Xtrain <- s13[id.train,]
+Gtrain <- trueclass[id.train]
+Gtest <- trueclass[id.test]
+Xtest <- s13[id.test,]
+Xtrain$trueclass <- Gtrain
+# logistic
+logfit <- glm(trueclass~., data=Xtrain, family=binomial)
+preds <- predict(logfit, Xtest, type='response')
+final.test <- Xtest
+final.test$trueclass <- Gtest
+final.test$pred <- preds
+roc.res <- roc(final.test, trueclass, pred)
+roc.res$auc
+plot(roc.res)
+```
+
+# GSE100227 s14
+```{r}
+library(readxl)
+s14 = read.csv('data/GSE100227_normalized_data_Supple14.csv')
+s14_p = read_excel('data/41467_2021_25583_MOESM9_ESM.xlsx', sheet = 3)
+new_s14 = cbind(intercept,s14)
+res2_1 = as.matrix(new_s14) %*% as.matrix(s14_p[,2])
+res2_1 <- 1/(1+exp(-res2_1))
+```
+
+```{r}
+# For x greater than cutoff, assign it to 'MZ'
+# For x smaller than cutoff, assign it to 'DZ'
+zygosity.predicted.s14 = apply(res2_1, 2, function(x) ifelse(x >= 0.5143504718606, "MZ", "DZ"))
+```
+
+
+```{r}
+# Confusion matrix
+predicted_vs_true.s14 = data.frame(zygosity.predicted.s14, zygosity.true, res2_1)
+# remove NAs
+predicted_vs_true2.s14 = predicted_vs_true.s14[complete.cases(predicted_vs_true.s14),] 
+# remove Sisters
+predicted_vs_true2.s14 = subset(predicted_vs_true2.s14, zygosity.true != 'Sister') 
+confusion.matrix.s14 = xtabs(~ Estimate + zygosity.true, predicted_vs_true2.s14)
+confusion.matrix.s14
+```
+
+
+```{r}
+# ROC curve
+pred.s14 <- prediction(predicted_vs_true2.s14[,3], predicted_vs_true2.s14[,2])
+perf.s14 <- performance(pred.s14,"tpr","fpr")
+perf.s14
+plot(perf.s14,colorize=TRUE)
+```
+
+```{r}
+# Let 'MZ' be 1 and "DZ" be 0 for further analysis
+predicted_vs_true3.s14 = apply(predicted_vs_true2.s14[,1:2],2, function(x) ifelse(x == 'MZ', 1, 0))
+predicted_vs_true3.s14 = cbind(predicted_vs_true3.s14, prob = predicted_vs_true2.s14[,3])
+```
+
+```{r}
+# Model performance
+roc.p.s14 = roc(predicted_vs_true3.s14[,2], predicted_vs_true3.s14[,3])
+cutoff.s14 = roc.p.s14$thresholds[which.max(roc.p.s14$sensitivities+roc.p.s14$specificities)]
+pred_b.s14 = as.integer(predicted_vs_true3.s14[,3]>cutoff.s14)
+cft.s14 = table(pred_b.s14, predicted_vs_true3.s14[,2])
+cm.s14 = confusionMatrix(cft.s14, positive = '1', mode = 'everything')
+paste0('cutoff s14: ', cutoff.s14)
+print(roc.p.s14$auc)
+print(cm.s14)
+```
+
+```{r}
+#pca visualisation
+aa = cbind(s14,predicted_vs_true.s14)
+aa = subset(aa,zygosity.true != 'Sister')
+bb = aa[,1:232]
+cc = aa[,235:235]
+final <- bb
+final$trueclass <- predicted_vs_true3.s14[,2]
+final$pred <- as.vector(cc)
+
+foo <- prcomp(bb, center=T, scale. = T)
+bar <- foo$x[,1:2]
+plot(bar,col=trueclass+1)
+```
+
+
+```{r}
+library(pls)
+pls.res <- plsr(trueclass~., ncomp=2, data=final)
+plot(pls.res$scores, col=trueclass+1)
+```
+
+
+
+
+## Method 2
+### Changing true label 'Sister' to 'DZ' 
+#### S13
+```{r}
+# load all file
+s13 = read.csv('data/GSE100227_normalized_data_Supple13.csv')
+s13_p = read_excel('data/41467_2021_25583_MOESM9_ESM.xlsx', sheet = 2)
+response = read.csv("data/GSE100227_response.csv")
+# response variable
+zygosity.true = response$zygostiy
+# add intercept to s13
+intercept = c(rep(1,length(zygosity.true)))
+new_s13 = cbind(intercept,s13)
+# dot product
+res1_1 = as.matrix(new_s13) %*% as.matrix(s13_p[,2]) 
+res1_1 <- 1/(1+exp(-res1_1))
+zygosity.predicted = apply(res1_1, 2, function(x) ifelse(x >= 0.635261309248644, "MZ", "DZ"))
+```
+
+```{r}
+# replace Sister to DZ
+predicted_vs_true2 = data.frame(zygosity.predicted, zygosity.true, res1_1)
+predicted_vs_true2[,4] = predicted_vs_true2[,2]
+predicted_vs_true2[,4][predicted_vs_true2[,4] == 'Sister'] = 'DZ'
+colnames(predicted_vs_true2) = c('Estimate','zygosity.true','prob', 'zygosity.changed')
+predicted_vs_true2
+# replace MZ to 1, DZ to 0
+predicted_vs_true3 = apply(predicted_vs_true2[,1:2],2, function(x) ifelse(x == 'MZ', 1, 0))
+predicted_vs_true3_1 = apply(predicted_vs_true2[,3:4],2, function(x) ifelse(x == 'MZ', 1, 0))
+predicted_vs_true3 = cbind(predicted_vs_true3[,1],predicted_vs_true3_1[,2], prob = predicted_vs_true2[,3])
+confusion.matrix = xtabs(~ Estimate + zygosity.true, predicted_vs_true2)
+confusion.matrix
+```
+
+```{r}
+# AUC & cutoff
+library(caret)
+library(pROC)
+library(ROCR)
+roc.p = roc(predicted_vs_true3[,2], predicted_vs_true3[,3])
+cutoff = roc.p$thresholds[which.max(roc.p$sensitivities+roc.p$specificities)]
+pred_b = as.integer(predicted_vs_true3[,3]>cutoff)
+cft = table(pred_b, predicted_vs_true3[,2])
+cm = confusionMatrix(cft, positive = '1', mode = 'everything')
+paste0('cutoff: ', cutoff)
+print(roc.p$auc)
+print(cm)
+```
+
+```{r}
+# plot the graph
+pred <- prediction(predicted_vs_true3[,3], predicted_vs_true3[,2])
+perf <- performance(pred,"tpr","fpr")
+plot(perf,colorize=TRUE)
+```
+
+```{r}
+#pca visualisation
+final <- s13
+final$trueclass <- predicted_vs_true3[,2]
+final$pred <- as.vector(res1_1)
+
+foo <- prcomp(s13, center=T, scale. = T)
+bar <- foo$x[,1:2]
+plot(bar,col=trueclass+1)
+```
+
+
+```{r}
+library(pls)
+pls.res <- plsr(trueclass~., ncomp=2, data=final)
+plot(pls.res$scores, col=trueclass+1)
+```
+
+```{r}
+# use 75% data to training
+ntrain <- round(N*0.75)
+ntest <- N - ntrain
+# set.seed(123)
+id.train <- sample(1:N,ntrain)
+id.test <- setdiff(1:N,id.train)
+Xtrain <- s13[id.train,]
+Gtrain <- trueclass[id.train]
+Gtest <- trueclass[id.test]
+Xtest <- s13[id.test,]
+Xtrain$trueclass <- Gtrain
+# logistic
+logfit <- glm(trueclass~., data=Xtrain, family=binomial)
+preds <- predict(logfit, Xtest, type='response')
+final.test <- Xtest
+final.test$trueclass <- Gtest
+final.test$pred <- preds
+roc.res <- roc(final.test, trueclass, pred)
+roc.res$auc
+plot(roc.res)
+```
+
+
+# S14
+```{r}
+# load all files
+library(readxl)
+s14 = read.csv('data/GSE100227_normalized_data_Supple14.csv')
+s14_p = read_excel('data/41467_2021_25583_MOESM9_ESM.xlsx', sheet = 3)
+new_s14 = cbind(intercept,s14)
+# dot product
+res2_1 = as.matrix(new_s14) %*% as.matrix(s14_p[,2])
+res2_1 <- 1/(1+exp(-res2_1))
+zygosity.predicted.s14 = apply(res2_1, 2, function(x) ifelse(x >= 0.518139942200379, "MZ", "DZ"))
+```
+
+```{r}
+# replace all sister to DZ
+predicted_vs_true.s14 = data.frame(zygosity.predicted.s14, zygosity.true, res2_1)
+predicted_vs_true.s14[,4] = predicted_vs_true.s14[,2]
+predicted_vs_true.s14[,4][predicted_vs_true.s14[,4] == 'Sister'] = 'DZ'
+colnames(predicted_vs_true.s14) = c('Estimate','zygosity.true','prob', 'zygosity.changed')
+predicted_vs_true.s14
+confusion.matrix.s14 = xtabs(~ Estimate + zygosity.true, predicted_vs_true.s14)
+confusion.matrix.s14
+```
+
+```{r}
+predicted_vs_true2.s14 = apply(predicted_vs_true.s14[,1:2],2, function(x) ifelse(x == 'MZ', 1, 0))
+predicted_vs_true2_1.s14 = apply(predicted_vs_true.s14[,3:4],2, function(x) ifelse(x == 'MZ', 1, 0))
+predicted_vs_true2.s14 = cbind(predicted_vs_true2.s14[,1],predicted_vs_true2_1.s14[,2], prob = predicted_vs_true.s14[,3])
+```
+
+```{r}
+library(caret)
+library(pROC)
+library(ROCR)
+roc.p = roc(predicted_vs_true2.s14[,2], predicted_vs_true2.s14[,3])
+cutoff = roc.p$thresholds[which.max(roc.p$sensitivities+roc.p$specificities)]
+pred_b = as.integer(predicted_vs_true2.s14[,3]>cutoff)
+cft = table(pred_b, predicted_vs_true2.s14[,2])
+cm = confusionMatrix(cft, positive = '1', mode = 'everything')
+paste0('cutoff: ', cutoff)
+print(roc.p$auc)
+print(cm)
+```
+
+```{r}
+pred <- prediction(predicted_vs_true2.s14[,3], predicted_vs_true2.s14[,2])
+perf <- performance(pred,"tpr","fpr")
+plot(perf,colorize=TRUE)
+```
+
+```{r}
+#pca visualisation
+final <- s14
+final$trueclass <- predicted_vs_true2.s14[,2]
+final$pred <- as.vector(res2_1)
+
+foo <- prcomp(s14, center=T, scale. = T)
+bar <- foo$x[,1:2]
+plot(bar,col=trueclass+1)
+```
+
+
+```{r}
+library(pls)
+pls.res <- plsr(trueclass~., ncomp=2, data=final)
+plot(pls.res$scores, col=trueclass+1)
+```
+
+```{r}
+ntrain <- round(N*0.75)
+ntest <- N - ntrain
+# set.seed(123)
+id.train <- sample(1:N,ntrain)
+id.test <- setdiff(1:N,id.train)
+Xtrain <- s13[id.train,]
+Gtrain <- trueclass[id.train]
+Gtest <- trueclass[id.test]
+Xtest <- s13[id.test,]
+Xtrain$trueclass <- Gtrain
+# logistic
+logfit <- glm(trueclass~., data=Xtrain, family=binomial)
+preds <- predict(logfit, Xtest, type='response')
+final.test <- Xtest
+final.test$trueclass <- Gtest
+final.test$pred <- preds
+roc.res <- roc(final.test, trueclass, pred)
+roc.res$auc
+plot(roc.res)
+```
