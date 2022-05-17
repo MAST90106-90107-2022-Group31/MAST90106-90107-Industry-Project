@@ -26,9 +26,9 @@ write.table(df1, file = "data/GSE100227_response.csv",row.names=FALSE,col.names=
 
 ```{r}
 # load all the files
-s13 = read.csv('data/GSE100227_normalized_data_Supple13.csv')
-s13_p = read_excel('data/41467_2021_25583_MOESM9_ESM.xlsx', sheet = 2)
-response = read.csv("data/GSE100227_response.csv")
+s13 = read.csv('GSE100227_normalized_data_Supple13.csv')
+s13_p = read_excel('41467_2021_25583_MOESM9_ESM.xlsx', sheet = 2)
+response = read.csv("GSE100227_response.csv")
 zygosity.true = response$zygostiy
 ```
 
@@ -88,6 +88,11 @@ print(cm)
 ```
 
 ```{r}
+# use another way to calculate AUC
+auc(predicted_vs_true3[,2], predicted_vs_true3[,3])
+```
+
+```{r}
 #pca visualisation
 aa = cbind(s13,predicted_vs_true)
 aa = subset(aa,zygosity.true != 'Sister')
@@ -134,8 +139,8 @@ plot(roc.res)
 # GSE100227 s14
 ```{r}
 library(readxl)
-s14 = read.csv('data/GSE100227_normalized_data_Supple14.csv')
-s14_p = read_excel('data/41467_2021_25583_MOESM9_ESM.xlsx', sheet = 3)
+s14 = read.csv('GSE100227_normalized_data_Supple14.csv')
+s14_p = read_excel('41467_2021_25583_MOESM9_ESM.xlsx', sheet = 3)
 new_s14 = cbind(intercept,s14)
 res2_1 = as.matrix(new_s14) %*% as.matrix(s14_p[,2])
 res2_1 <- 1/(1+exp(-res2_1))
@@ -146,7 +151,6 @@ res2_1 <- 1/(1+exp(-res2_1))
 # For x smaller than cutoff, assign it to 'DZ'
 zygosity.predicted.s14 = apply(res2_1, 2, function(x) ifelse(x >= 0.5143504718606, "MZ", "DZ"))
 ```
-
 
 ```{r}
 # Confusion matrix
@@ -187,6 +191,11 @@ print(cm.s14)
 ```
 
 ```{r}
+# use another way to calculate AUC
+auc(predicted_vs_true3.s14[,2], predicted_vs_true3.s14[,3])
+```
+
+```{r}
 #pca visualisation
 aa = cbind(s14,predicted_vs_true.s14)
 aa = subset(aa,zygosity.true != 'Sister')
@@ -216,9 +225,9 @@ plot(pls.res$scores, col=trueclass+1)
 #### S13
 ```{r}
 # load all file
-s13 = read.csv('data/GSE100227_normalized_data_Supple13.csv')
-s13_p = read_excel('data/41467_2021_25583_MOESM9_ESM.xlsx', sheet = 2)
-response = read.csv("data/GSE100227_response.csv")
+s13 = read.csv('GSE100227_normalized_data_Supple13.csv')
+s13_p = read_excel('41467_2021_25583_MOESM9_ESM.xlsx', sheet = 2)
+response = read.csv("GSE100227_response.csv")
 # response variable
 zygosity.true = response$zygostiy
 # add intercept to s13
@@ -258,6 +267,11 @@ cm = confusionMatrix(cft, positive = '1', mode = 'everything')
 paste0('cutoff: ', cutoff)
 print(roc.p$auc)
 print(cm)
+```
+
+```{r}
+# use another way to calculate AUC
+auc(predicted_vs_true3[,2], predicted_vs_true3[,3])
 ```
 
 ```{r}
@@ -313,8 +327,8 @@ plot(roc.res)
 ```{r}
 # load all files
 library(readxl)
-s14 = read.csv('data/GSE100227_normalized_data_Supple14.csv')
-s14_p = read_excel('data/41467_2021_25583_MOESM9_ESM.xlsx', sheet = 3)
+s14 = read.csv('GSE100227_normalized_data_Supple14.csv')
+s14_p = read_excel('41467_2021_25583_MOESM9_ESM.xlsx', sheet = 3)
 new_s14 = cbind(intercept,s14)
 # dot product
 res2_1 = as.matrix(new_s14) %*% as.matrix(s14_p[,2])
@@ -351,6 +365,10 @@ cm = confusionMatrix(cft, positive = '1', mode = 'everything')
 paste0('cutoff: ', cutoff)
 print(roc.p$auc)
 print(cm)
+```
+
+```{r}
+auc(predicted_vs_true2.s14[,2],predicted_vs_true2.s14[,3])
 ```
 
 ```{r}
