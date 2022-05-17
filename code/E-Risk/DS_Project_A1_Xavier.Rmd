@@ -1,0 +1,168 @@
+---
+title: "DS_Project_A1"
+author: "Ni Zhang"
+date: "4/7/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## AIM 1: Testing the existing classifier
+
+#### Read datasets
+```{r}
+install.packages("BiocManager")
+BiocManager::install("GEOquery")
+```
+```{r}
+library("GEOquery")
+```
+
+```{r}
+Sys.setenv(VROOM_CONNECTION_SIZE = 786432*6)
+```
+
+```{r}
+gse <- getGEO("GSE105018", GSEMatrix = TRUE)
+```
+
+```{r}
+gse_data = gse$GSE105018_series_matrix.txt.gz@phenoData@data
+sampleID = gse$GSE105018_series_matrix.txt.gz@phenoData@data$source_name_ch1
+zygostiy = gse$GSE105018_series_matrix.txt.gz@phenoData@data$`zygosity:ch1`
+gender = gse$GSE105018_series_matrix.txt.gz@phenoData@data$`gender:ch1`
+gsm = gse$GSE105018_series_matrix.txt.gz@phenoData@data$geo_accession
+```
+
+```{r}
+df1 = data.frame(sampleID,zygostiy,gender,gsm)
+```
+
+```{r}
+write.table(df1, file = "/Users/xavier/Desktop/Capstone /data/data1.csv",row.names=FALSE,col.names=TRUE,sep=",")
+```
+
+```{r}
+csv = read.csv('/Users/xavier/Desktop/Capstone /data/demo1.csv')
+```
+
+```{r}
+library(GEOquery)
+eSet1 <- getGEO("GPL13534", 
+               destdir = '.',  #下载在当前目录
+               getGPL = T) #平台信息不要
+```
+
+```{r}
+a = read.table(file="/Users/xavier/Downloads/GSE105018_series_matrix.txt",
+               header = F ,sep = " ",quote = "",fill = T, comment.char = "!")
+```
+
+
+```{r}
+b = read.table(file="/Users/xavier/Desktop/Capstone /GSE105018_family.soft",
+               header = F ,sep = "\n",quote = "",fill = T, comment.char = "!")
+```
+
+```{r}
+test = gse$GSE105018_series_matrix.txt.gz
+test.df <- as(test,"data.frame")
+summary(test.df)
+dim(test.df)
+anyNA(test.df)
+# apply(test.df,2,function(x) sum(is.na(x)))
+```
+
+
+```{r}
+data = getGEO(GEO = 'GSE', filename = "/Users/xavier/Desktop/Capstone /GSE105018_family.soft", GSEMatrix = TRUE)
+gpls = data@gpls
+gpl = gpls$GPL13534
+gplDataTable = gpl@dataTable
+test = gplDataTable@table
+```
+
+```{r}
+BiocManager::install("illuminaio")
+library(illuminaio)
+```
+
+```{r}
+G.idats <- lapply('/Users/xavier/Downloads/GSM2814050_9741779121_R03C01_Grn.idat', function(x){ message("Loading:",x);readIDAT(x)})
+#R.idats <- lapply(RedPath, function(x){ message("Loading:",x);readIDAT(x)})
+```
+
+```{r}
+dat <- read.table("/Users/xavier/Downloads/GSE105018_NormalisedData.csv.gz",header=TRUE)
+```
+
+```{r}
+data = read.csv('/Users/xavier/Desktop/Capstone /data/data2.csv',sep = ',')
+```
+
+
+```{r}
+# install package and load data for s13
+install.packages('readxl')
+library(readxl)
+s13 = read.csv('/Users/xavier/Desktop/Capstone /data/dataSupple13.csv')
+s13_p = read_excel('/Users/xavier/Desktop/Capstone /data/41467_2021_25583_MOESM9_ESM.xlsx', sheet = 2)
+response = read.csv("/Users/xavier/Desktop/Capstone /data/data1.csv")
+```
+
+```{r}
+# add intercept to s13
+intercept = c(rep(1,1658))
+new_s13 = cbind(intercept,s13)
+```
+
+```{r}
+# dot product
+res1_1 = as.matrix(new_s13) %*% as.matrix(s13_p[,2]) 
+```
+
+```{r}
+mdz = response$zygostiy
+res1_2 = apply(res1_1, 2, function(x) ifelse(x >= 0.5, "MZ", "DZ"))
+```
+
+```{r}
+# mis-classification rate
+df1_1 = data.frame(res1_2, mdz)
+df1_2 = df1_1[complete.cases(df1_1),] # remove NAs
+res1_3 = xtabs(~ Estimate + mdz, df1_2)
+((res1_3[1,1]+res1_3[2,2])/(res1_3[1,1]+res1_3[1,2]+res1_3[2,1]+res1_3[2,2]))
+```
+
+```{r}
+# install.packages('pROC')
+# library(pROC)
+install.packages('ROCR')
+library(ROCR)
+```
+
+```{r}
+demo1 = apply(df1_2,2, function(x) ifelse(x == 'MZ', 1, 0))
+auc(demo1[,2],demo1[,1])
+pred <- prediction(demo1[,1], demo1[,2])
+perf <- performance(pred,"tpr","fpr")
+perf
+plot(perf,colorize=TRUE)
+```
+
+```{r}
+# s14 
+s14 = read.csv('/Users/xavier/Desktop/Capstone /data/dataSupple14.csv')
+s14_p = read_excel('/Users/xavier/Desktop/Capstone /data/41467_2021_25583_MOESM9_ESM.xlsx', sheet = 3)
+new_s14 = cbind(intercept,s14)
+res2_1 = as.matrix(new_s14) %*% as.matrix(s14_p[,2])
+```
+
+```{r}
+res2_2 = apply(res2_1, 2, function(x) ifelse(x >= 0.05, "MZ", "DZ"))
+df2_1 = data.frame(res2_2, mdz)
+res2_3 = xtabs(~ Estimate + mdz, df2_1)
+((res2_3[1,1]+res2_3[2,2])/(res2_3[1,1]+res2_3[1,2]+res2_3[2,1]+res2_3[2,2]))
+```

@@ -1,0 +1,151 @@
+---
+title: "DS_Project_A1"
+author: "Ni Zhang"
+date: "4/7/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## AIM 1: Testing the existing classifier - E-Risk
+
+### Weights obtained from supplementary Data 13
+```{r}
+# install package and load data for s13
+# install.packages('readxl')
+library(readxl)
+s13 = read.csv('dataSupple13.csv')
+s13_p = read_excel('41467_2021_25583_MOESM9_ESM.xlsx', sheet = 2)
+response = read.csv("data1.csv")
+```
+
+```{r}
+# add intercept to s13
+intercept = c(rep(1,1658))
+new_s13 = cbind(intercept,s13)
+```
+
+```{r}
+# dot product
+res1_1 = as.matrix(new_s13) %*% as.matrix(s13_p[,2]) 
+res1_1 <- 1/(1+exp(-res1_1))
+```
+
+```{r}
+# For x greater than cutoff, assign it to 'MZ'
+# For x smaller than cutoff, assign it to 'DZ'
+# 0.6392671063064 is calculated from line 79 using package "caret"
+zygosity.true = response$zygostiy
+zygosity.predicted = apply(res1_1, 2, function(x) ifelse(x >= 0.6392671063064, "MZ", "DZ"))
+```
+
+
+```{r}
+# confusion matrix (true vs. predicted)
+predicted_vs_true = data.frame(zygosity.predicted, zygosity.true, res1_1)
+predicted_vs_true2 = predicted_vs_true[complete.cases(predicted_vs_true),] # remove NAs
+confusion.matrix = xtabs(~ Estimate + zygosity.true, predicted_vs_true2)
+accuracy = (confusion.matrix[1,1]+confusion.matrix[2,2])/(confusion.matrix[1,1]+confusion.matrix[1,2]+
+      confusion.matrix[2,1]+confusion.matrix[2,2])
+confusion.matrix
+```
+
+```{r}
+library(pROC)
+library(ROCR)
+```
+
+```{r}
+# ROC curve
+pred <- prediction(predicted_vs_true2[,3], predicted_vs_true2[,2])
+perf <- performance(pred,"tpr","fpr")
+perf
+plot(perf,colorize=TRUE)
+```
+
+```{r}
+# Let 'MZ' be 1 and "DZ" be 0 for further analysis
+predicted_vs_true3 = apply(predicted_vs_true2[,1:2],2, function(x) ifelse(x == 'MZ', 1, 0))
+predicted_vs_true3 = cbind(predicted_vs_true3, prob = predicted_vs_true2[,3])
+```
+
+```{r}
+# Model performance
+library(caret)
+roc.p = roc(predicted_vs_true3[,2], predicted_vs_true3[,3])
+cutoff = roc.p$thresholds[which.max(roc.p$sensitivities+roc.p$specificities)]
+pred_b = as.integer(predicted_vs_true3[,3]>cutoff)
+cft = table(pred_b, predicted_vs_true3[,2])
+cm = confusionMatrix(cft, positive = '1', mode = 'everything')
+paste0('cutoff: ', cutoff)
+print(roc.p$auc)
+print(cm)
+```
+
+### Weights obtained from supplementary Data 14
+
+```{r}
+# s14 
+library(readxl)
+s14 = read.csv('dataSupple14.csv')
+s14_p = read_excel('41467_2021_25583_MOESM9_ESM.xlsx', sheet = 3)
+new_s14 = cbind(intercept,s14)
+res2_1 = as.matrix(new_s14) %*% as.matrix(s14_p[,2])
+res2_1 <- 1/(1+exp(-res2_1))
+```
+
+
+```{r}
+# For x greater than cutoff, assign it to 'MZ'
+# For x smaller than cutoff, assign it to 'DZ'
+zygosity.predicted.s14 = apply(res2_1, 2, function(x) ifelse(x >= 0.526967877315572, "MZ", "DZ"))
+```
+
+
+```{r}
+# Confusion matrix
+predicted_vs_true.s14 = data.frame(zygosity.predicted.s14, zygosity.true, res2_1)
+# remove NAs
+predicted_vs_true2.s14 = predicted_vs_true.s14[complete.cases(predicted_vs_true.s14),] 
+confusion.matrix.s14 = xtabs(~ Estimate + zygosity.true, predicted_vs_true2.s14)
+confusion.matrix.s14
+```
+
+
+```{r}
+# ROC curve
+pred.s14 <- prediction(predicted_vs_true2.s14[,3], predicted_vs_true2.s14[,2])
+perf.s14 <- performance(pred.s14,"tpr","fpr")
+perf.s14
+plot(perf.s14,colorize=TRUE)
+```
+
+```{r}
+# Let 'MZ' be 1 and "DZ" be 0 for further analysis
+predicted_vs_true3.s14 = apply(predicted_vs_true2.s14[,1:2],2, function(x) ifelse(x == 'MZ', 1, 0))
+predicted_vs_true3.s14 = cbind(predicted_vs_true3.s14, prob = predicted_vs_true2.s14[,3])
+```
+
+```{r}
+# Model performance
+roc.p.s14 = roc(predicted_vs_true3.s14[,2], predicted_vs_true3.s14[,3])
+cutoff.s14 = roc.p.s14$thresholds[which.max(roc.p.s14$sensitivities+roc.p.s14$specificities)]
+pred_b.s14 = as.integer(predicted_vs_true3.s14[,3]>cutoff.s14)
+cft.s14 = table(pred_b.s14, predicted_vs_true3.s14[,2])
+cm.s14 = confusionMatrix(cft.s14, positive = '1', mode = 'everything')
+paste0('cutoff for supplementary data 14: ', cutoff.s14)
+print(roc.p.s14$auc)
+print(cm.s14)
+```
+
+
+
+
+
+
+
+
+
+

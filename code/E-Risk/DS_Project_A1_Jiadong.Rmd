@@ -1,0 +1,112 @@
+---
+title: "DS_Project_A1_Jiadong"
+author: "Ni Zhang"
+date: "5/6/2022"
+output: html_document
+---
+```{r}
+library(readxl)
+library(ROCR)
+library(pROC)
+```
+
+```{r}
+s13 = read.csv('dataSupple13.csv')
+s13_p = read_excel('41467_2021_25583_MOESM9_ESM.xlsx', sheet = 2)
+response = read.csv("data1.csv")
+```
+
+```{r}
+N <- nrow(s13)
+# add intercept to s13
+intercept = c(rep(1,1658))
+new_s13 = cbind(intercept,s13)
+```
+
+```{r}
+# dot product
+res1_1 = as.matrix(new_s13) %*% as.matrix(s13_p[,2]) 
+res1_1 <- 1/(1+exp(-(res1_1)))
+```
+
+```{r}
+mdz = response$zygostiy
+trueclass <- rep(0,N)
+trueclass[mdz=='MZ'] <- 1
+```
+
+```{r}
+final <- s13
+final$trueclass <- trueclass
+final$pred <- as.vector(res1_1)
+```
+
+
+```{r}
+roc.res <- roc(final, trueclass, pred)
+plot(roc.res)
+```
+
+```{r}
+#pca visualisation
+foo <- prcomp(s13, center=T, scale. = T)
+bar <- foo$x[,1:2]
+plot(bar,col=trueclass+1)
+```
+
+```{r}
+library(pls)
+pls.res <- plsr(trueclass~., ncomp=2, data=final)
+plot(pls.res$scores, col=trueclass+1)
+```
+
+```{r}
+library(glmnet)
+ntrain <- round(N*0.75)
+ntest <- N - ntrain
+set.seed(123)
+id.train <- sample(1:N,ntrain)
+id.test <- setdiff(1:N,id.train)
+Xtrain <- s13[id.train,]
+Gtrain <- trueclass[id.train]
+Gtest <- trueclass[id.test]
+Xtest <- s13[id.test,]
+cvres <- cv.glmnet(as.matrix(Xtrain), as.factor(Gtrain), family = "binomial", type.measure = 'auc')
+which.lam <- which(cvres$cvm==max(cvres$cvm))
+preds <- predict(cvres$glmnet.fit, as.matrix(Xtest), type='response')[,which.lam]
+final.test <- Xtest
+final.test$trueclass <- Gtest
+final.test$pred <- preds
+roc.res <- roc(final.test, trueclass, pred)
+roc.res$auc
+plot(roc.res)
+```
+
+```{r}
+# no further variable selection
+ntrain <- round(N*0.75)
+ntest <- N - ntrain
+set.seed(123)
+id.train <- sample(1:N,ntrain)
+id.test <- setdiff(1:N,id.train)
+Xtrain <- s13[id.train,]
+Gtrain <- trueclass[id.train]
+Gtest <- trueclass[id.test]
+Xtest <- s13[id.test,]
+Xtrain$trueclass <- Gtrain
+```
+
+```{r}
+# logistic
+logfit <- glm(trueclass~., data=Xtrain, family=binomial)
+preds <- predict(logfit, Xtest, type='response')
+final.test <- Xtest
+final.test$trueclass <- Gtest
+final.test$pred <- preds
+roc.res <- roc(final.test, trueclass, pred)
+roc.res$auc
+plot(roc.res)
+```
+
+
+
