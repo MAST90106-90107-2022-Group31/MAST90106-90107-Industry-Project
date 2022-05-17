@@ -5,10 +5,7 @@ date: "12/05/2022"
 output: html_document
 ---
 # GSE100227
-
-## Method 1
-### Remove all the sister
-#### s13
+## Downloading the response data for GSE100227
 ```{r}
 # Get the response data of GSE100227
 gse <- getGEO("GSE100227", GSEMatrix = TRUE)
@@ -23,7 +20,10 @@ df1 = data.frame(sampleID,zygostiy)
 write.table(df1, file = "data/GSE100227_response.csv",row.names=FALSE,col.names=TRUE,sep=",")
 ```
 
-
+# START HERE
+## Method 1
+### Remove all the sister
+#### s13
 ```{r}
 # load all the files
 s13 = read.csv('GSE100227_normalized_data_Supple13.csv')
