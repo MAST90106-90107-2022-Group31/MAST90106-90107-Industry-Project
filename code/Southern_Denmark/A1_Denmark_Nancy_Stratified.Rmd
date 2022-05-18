@@ -1,0 +1,196 @@
+---
+title: "Aim1_Denmark_Stratified"
+author: "Ni Zhang"
+date: "5/11/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## AIM 1: Testing the existing classifier - Southern Denmark
+
+### Weights obtained from supplementary Data 13
+
+```{r}
+library(readxl)
+s13.1997 = read_excel('s13_outer_denmark_stratified.xlsx', sheet = 1)
+s13.2007 = read_excel('s13_outer_denmark_stratified.xlsx', sheet = 2)
+s13_p = read_excel('41467_2021_25583_MOESM9_ESM.xlsx', sheet = 2)
+response.1997 = read_excel("data2-13_stratified.xlsx", sheet = 1)
+response.2007 = read_excel("data2-13_stratified.xlsx", sheet = 2)
+```
+
+
+```{r}
+# add intercept to s13
+intercept = c(rep(1,90))
+new_s13.1997 = cbind(intercept,s13.1997)
+new_s13.2007 = cbind(intercept,s13.2007)
+```
+
+```{r}
+# dot product
+res1_1.1997 = as.matrix(new_s13.1997) %*% as.matrix(s13_p[,2]) 
+res1_1.1997 <- 1/(1+exp(-res1_1.1997))
+res1_1.2007 = as.matrix(new_s13.2007) %*% as.matrix(s13_p[,2]) 
+res1_1.2007 <- 1/(1+exp(-res1_1.2007))
+```
+
+```{r}
+#1997
+# For x greater than cutoff, assign it to 'MZ'
+# For x smaller than cutoff, assign it to 'DZ'
+# 0.640115562110414 is calculated from line 92 using package "caret"
+zygosity.true.1997 = response.1997$Zygosity
+zygosity.predicted.1997 = apply(res1_1.1997, 2, function(x) ifelse(x >= 0.640115562110414, "1", "0"))
+```
+
+```{r}
+#2007
+zygosity.true.2007 = response.2007$Zygosity
+zygosity.predicted.2007 = apply(res1_1.2007, 2, function(x) ifelse(x >= 0.640461480371415, "1", "0"))
+```
+
+```{r}
+# confusion matrix (true vs. predicted)
+predicted_vs_true.1997 = data.frame(zygosity.true.1997, zygosity.true.1997, res1_1.1997)
+predicted_vs_true2.1997 = predicted_vs_true.1997[complete.cases(predicted_vs_true.1997),] # remove NAs
+predicted_vs_true.2007 = data.frame(zygosity.predicted.2007, zygosity.true.2007, res1_1.2007)
+predicted_vs_true2.2007 = predicted_vs_true.2007[complete.cases(predicted_vs_true.2007),] # remove NAs
+```
+
+```{r}
+library(pROC)
+library(ROCR)
+```
+
+```{r}
+# ROC curve
+pred.1997 <- prediction(predicted_vs_true2.1997[,3], predicted_vs_true2.1997[,2])
+perf.1997 <- performance(pred.1997,"tpr","fpr")
+perf.1997
+plot(perf.1997,colorize=TRUE)
+title("ROC Curve of Classifier 13 - 1997")
+```
+
+```{r}
+# ROC curve
+pred.2007 <- prediction(predicted_vs_true2.2007[,3], predicted_vs_true2.2007[,2])
+perf.2007 <- performance(pred.2007,"tpr","fpr")
+perf.2007
+plot(perf.2007,colorize=TRUE)
+title("ROC Curve of Classifier 13 - 2007")
+```
+
+
+```{r}
+# Model performance - 1997
+library(caret)
+roc.p.1997 = roc(predicted_vs_true2.1997[,2], predicted_vs_true2.1997[,3])
+cutoff.1997 = roc.p.1997$thresholds[which.max(roc.p.1997$sensitivities+roc.p.1997$specificities)]
+pred_b.1997 = as.integer(predicted_vs_true2.1997[,3]>cutoff.1997)
+cft.1997 = table(pred_b.1997, predicted_vs_true2.1997[,2])
+cm.1997 = confusionMatrix(cft.1997, positive = '1', mode = 'everything')
+paste0('cutoff: ', cutoff.1997)
+print(roc.p.1997$auc)
+print(cm.1997)
+```
+
+```{r}
+# Model performance - 2007
+roc.p.2007 = roc(predicted_vs_true2.2007[,2], predicted_vs_true2.2007[,3])
+cutoff.2007 = roc.p.2007$thresholds[which.max(roc.p.2007$sensitivities+roc.p.2007$specificities)]
+pred_b.2007 = as.integer(predicted_vs_true2.2007[,3]>cutoff.2007)
+cft.2007 = table(pred_b.2007, predicted_vs_true2.2007[,2])
+cm.2007 = confusionMatrix(cft.2007, positive = '1', mode = 'everything')
+paste0('cutoff: ', cutoff.2007)
+print(roc.p.2007$auc)
+print(cm.2007)
+```
+
+
+### Weights obtained from supplementary Data 14
+
+```{r}
+library(readxl)
+s14.1997 = read_excel('s14_outer_denmark_stratified.xlsx', sheet = 1)
+response.s14.1997 = read_excel("data2-14_stratified.xlsx", sheet = 1)
+s14.2007 = read_excel('s14_outer_denmark_stratified.xlsx', sheet = 2)
+response.s14.2007 = read_excel("data2-14_stratified.xlsx", sheet = 2)
+s14_p = read_excel('41467_2021_25583_MOESM9_ESM.xlsx', sheet = 3)
+new_s14.1997 = cbind(intercept,s14.1997)
+res2_1.1997 = as.matrix(new_s14.1997) %*% as.matrix(s14_p[,2])
+res2_1.1997 <- 1/(1+exp(-res2_1.1997))
+new_s14.2007 = cbind(intercept,s14.2007)
+res2_1.2007 = as.matrix(new_s14.2007) %*% as.matrix(s14_p[,2])
+res2_1.2007 <- 1/(1+exp(-res2_1.2007))
+```
+
+
+```{r}
+# For x greater than cutoff, assign it to 'MZ'
+# For x smaller than cutoff, assign it to 'DZ'
+zygosity.true.s14.1997 = response.s14.1997$Zygosity
+zygosity.predicted.s14.1997 = apply(res2_1.1997, 2, function(x) ifelse(x >= 0.515229735575586, "MZ", "DZ"))
+zygosity.true.s14.2007 = response.s14.2007$Zygosity
+zygosity.predicted.s14.2007 = apply(res2_1.2007, 2, function(x) ifelse(x >= 0.506745614952607, "MZ", "DZ"))
+```
+
+
+```{r}
+# Confusion matrix
+predicted_vs_true.s14.1997 = data.frame(zygosity.predicted.s14.1997, zygosity.true.s14.1997, res2_1.1997)
+# remove NAs
+predicted_vs_true2.s14.1997 = predicted_vs_true.s14.1997[complete.cases(predicted_vs_true.s14.1997),] 
+
+predicted_vs_true.s14.2007 = data.frame(zygosity.predicted.s14.2007, zygosity.true.s14.2007, res2_1.2007)
+# remove NAs
+predicted_vs_true2.s14.2007 = predicted_vs_true.s14.2007[complete.cases(predicted_vs_true.s14.2007),] 
+```
+
+
+```{r}
+# ROC curve
+pred.s14.1997 <- prediction(predicted_vs_true2.s14.1997[,3], predicted_vs_true2.s14.1997[,2])
+perf.s14.1997 <- performance(pred.s14.1997,"tpr","fpr")
+perf.s14.1997
+plot(perf.s14.1997,colorize=TRUE)
+title("ROC Curve of Classifier 14 - 1997")
+```
+
+```{r}
+# ROC curve
+pred.s14.2007 <- prediction(predicted_vs_true2.s14.2007[,3], predicted_vs_true2.s14.2007[,2])
+perf.s14.2007 <- performance(pred.s14.2007,"tpr","fpr")
+perf.s14.2007
+plot(perf.s14.2007,colorize=TRUE)
+title("ROC Curve of Classifier 14 - 2007")
+```
+
+```{r}
+# Model performance
+roc.p.s14.1997 = roc(predicted_vs_true2.s14.1997[,2], predicted_vs_true2.s14.1997[,3])
+cutoff.s14.1997 = roc.p.s14.1997$thresholds[which.max(roc.p.s14.1997$sensitivities+roc.p.s14.1997$specificities)]
+pred_b.s14.1997 = as.integer(predicted_vs_true2.s14.1997[,3]>cutoff.s14.1997)
+cft.s14.1997 = table(pred_b.s14.1997, predicted_vs_true2.s14.1997[,2])
+cm.s14.1997 = confusionMatrix(cft.s14.1997, positive = '1', mode = 'everything')
+paste0('cutoff for supplementary data 14: ', cutoff.s14.1997)
+print(roc.p.s14.1997$auc)
+print(cm.s14.1997)
+```
+
+```{r}
+# Model performance
+roc.p.s14.2007 = roc(predicted_vs_true2.s14.2007[,2], predicted_vs_true2.s14.2007[,3])
+cutoff.s14.2007 = roc.p.s14.2007$thresholds[which.max(roc.p.s14.2007$sensitivities+roc.p.s14.2007$specificities)]
+pred_b.s14.2007 = as.integer(predicted_vs_true2.s14.2007[,3]>cutoff.s14.2007)
+cft.s14.2007 = table(pred_b.s14.2007, predicted_vs_true2.s14.2007[,2])
+cm.s14.2007 = confusionMatrix(cft.s14.2007, positive = '1', mode = 'everything')
+paste0('cutoff for supplementary data 14: ', cutoff.s14.2007)
+print(roc.p.s14.2007$auc)
+print(cm.s14.2007)
+```
+
+
