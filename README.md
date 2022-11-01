@@ -25,6 +25,7 @@ Codes for the final version of our classifiers can be found under code/f_trainin
 
 ## Expected Outcomes
 A research report easily modified to an article for a scientific journal.
+The final version of this report can be found under report/Report_Master_of_data_science_semester_2.pdf
 
 ## Host Information
 Host Organisation Name: Twins Research Centre of Epidemiology and Biostatistics UoM
