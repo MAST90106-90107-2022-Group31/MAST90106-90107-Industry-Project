@@ -19,6 +19,8 @@ Subject Coordinator: Professor Michael Kirley - mkirley@unimelb.edu.au
 ## Project Description
 Epigenetic modifications alter DNA expression without changing the DNA sequence. While monozygotic twins have the same DNA sequence, they could have different epigenetic modifications. Twins have been suggested to have unique epigenetic features. This project hypothesizes that the zygosity of twins (monzogytoic, dizygotic) can be accurately predicted by epigenetic markers, and aims to develop an epigenetic classifier for twin zygosity using high-dimensional DNA methylation data measured by the microarray chip and machine-learning techniques.
 
+Paper that was compared against in our study: https://www.nature.com/articles/s41467-021-25583-7
+
 ## Expected Outcomes
 A research report easily modified to an article for a scientific journal.
 
