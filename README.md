@@ -21,6 +21,8 @@ Epigenetic modifications alter DNA expression without changing the DNA sequence.
 
 Paper that was compared against in our study: https://www.nature.com/articles/s41467-021-25583-7
 
+Codes for the final version of our classifiers can be found under code/f_training.ipynb
+
 ## Expected Outcomes
 A research report easily modified to an article for a scientific journal.
 
